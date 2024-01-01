@@ -13,7 +13,7 @@ def bytes_to_base64(value):
         return base64.b64encode(value).decode('utf-8')
     return value
 
-def search_queries():
+def search_queries(count_symbol=2):
     alphabets = [
         "qwertyuiopasdfghjklzxcvbnm",
         "йцукенгшщзхъёфывапролджэячсмитьбю",
@@ -21,7 +21,7 @@ def search_queries():
     ]
 
     for alphabet in alphabets:
-        for pair in itertools.permutations(alphabet, 1):
+        for pair in itertools.permutations(alphabet, count_symbol):
             yield "".join(pair)
             
 api_id = API_ID
@@ -30,25 +30,33 @@ with TelegramClient('name', API_ID, API_HASH, system_version="4.16.30-vxCUSTOM")
     try:
         participants = {}
         channel_name = CHANNEL_NAME
-        for query in search_queries():
+        for query in search_queries(1):
             print(query)
             try:
                 for res in client.iter_participants(channel_name, search=query): 
                     res_dict = res.to_dict()
                     for k,v in res_dict.items():
                         res_dict[k] = str(v)
-                    print(res_dict)
                     participants[res.id] = res_dict
                     print(f'{res.id}|{res.first_name}|{res.last_name}|{res.username}')
-            except AuthKeyUnregisteredError:
+            except Exception as e:
                 client.disconnect()
-                print("Ключ аутентификации не зарегистрирован. Пожалуйста, проверьте API_ID и API_HASH.")
+                print(f"Ошибка при получении участников: {e}")
+            time.sleep(random.random() * 3)
+            
+        for query in search_queries(2):
+            print(query)
+            try:
+                for res in client.iter_participants(channel_name, search=query): 
+                    res_dict = res.to_dict()
+                    for k,v in res_dict.items():
+                        res_dict[k] = str(v)
+                    participants[res.id] = res_dict
+                    print(f'{res.id}|{res.first_name}|{res.last_name}|{res.username}')
             except Exception as e:
                 client.disconnect()
                 print(f"Ошибка при получении участников: {e}")
             time.sleep(random.random() * 3)        
-
-        print(participants)
 
         try:
             with open(f'{CHANNEL_NAME.split("/")[-1]}_subs.json', 'w', encoding="utf-8") as json_file:
@@ -64,8 +72,6 @@ with TelegramClient('name', API_ID, API_HASH, system_version="4.16.30-vxCUSTOM")
             print(f'Файл {CHANNEL_NAME.split("/")[-1]}_subs.txt успешно записан')
         except Exception as ex:
             print('Не удалось верно записать txt', ex)
-
-
 
         try:
             for k, v in participants.items():
